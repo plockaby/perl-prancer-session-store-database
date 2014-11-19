@@ -13,6 +13,7 @@ WriteMakefile(
         'Prancer'                    => '1.00',
         'Plack'                      => '0.9968',  # same version required by Web::Simple
         'Plack::Middleware::Session' => '0.23',  # require secrets
+        'DBI'                        => '0',
         'Try::Tiny'                  => '0',
         'perl'                       => '5.010',  # because "//" is used
     },

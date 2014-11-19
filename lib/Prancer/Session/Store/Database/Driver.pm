@@ -41,6 +41,7 @@ sub new {
     $self->{'_table'}           = $config->{'table'} || "sessions";
     $self->{'_timeout'}         = $config->{'expiration_timeout'} // 1800;
     $self->{'_autopurge'}       = $config->{'autopurge'} // 1;
+    $self->{'_application'}     = $config->{'application'};
 
     # store a pool of database connection handles
     $self->{'_handles'} = {};
@@ -95,8 +96,8 @@ sub handle {
 
 sub _get_connection {
     my $self = shift;
-
     my $dbh = undef;
+
     try {
         $dbh = DBI->connect(@{$self->{'_dsn'}}) || die "${\$DBI::errstr}\n";
     } catch {
@@ -114,7 +115,7 @@ sub _check_connection {
 
     if ($dbh->{'Active'} && (my $result = $dbh->ping())) {
         if (int($result)) {
-            # DB driver itself claims all is OK, trust it:
+            # DB driver itself claims all is OK, trust it
             return 1;
         } else {
             # it was "0 but true", meaning the DBD doesn't implement ping and

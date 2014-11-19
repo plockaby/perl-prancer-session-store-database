@@ -44,38 +44,40 @@ sub new {
         'PrintError' => 0,
     };
     if ($charset && $charset =~ /^utf8$/xi) {
-        $params->{'pg_enable_utf8'} = 1;
+        $params->{'sqlite_unicode'} = 1;
     }
 
-    $self->{'_dsn'} = [$dsn, $username, $password, $params];
+    $self->{'_dsn'} = [ $dsn, $username, $password, $params ];
     return $self;
 }
 
 sub fetch {
     my ($self, $session_id) = @_;
     my $dbh = $self->handle();
-
     my $result = undef;
+
     try {
         my $now = time();
         my $table = $self->{'_table'};
+        my $application = $self->{'_application'};
 
         my $sth = $dbh->prepare(qq|
             SELECT data
             FROM ${table}
             WHERE id = ?
+              AND application = ?
               AND timeout >= ?
         |);
-        $sth->execute($session_id, ($now - $self->{'_timeout'}));
-        my ($data) = $sth->fetchrow_array();
+        $sth->execute($session_id, $application, $now);
+        my ($data) = $sth->fetchrow();
         $sth->finish();
 
         # deserialize the data if there is any
-        $result = ($data ? $self->{'_deserializer'}->($data) : ());
+        $result = (defined($data) ? $self->{'_deserializer'}->($data) : undef);
 
         $dbh->commit();
     } catch {
-        try { $dbh->rollback() } catch {};
+        try { $dbh->rollback(); } catch {};
 
         my $error = (defined($_) ? $_ : "unknown");
         carp "error fetching from session: ${error}";
@@ -91,33 +93,32 @@ sub store {
     try {
         my $now = time();
         my $table = $self->{'_table'};
+        my $application = $self->{'_application'};
+        my $timeout = ($now + $self->{'_timeout'});
+        my $serialized = $self->{'_serializer'}->($data);
 
         my $insert_sth = $dbh->prepare(qq|
-            INSERT INTO ${table} (id, data)
-            SELECT :id, :data
+            INSERT INTO ${table} (id, application, timeout, data)
+            SELECT ?, ?, ?, ?
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM ${table}
-                WHERE id = :id
-                  AND timeout >= :timeout
+                WHERE id = ?
+                  AND application = ?
+                  AND timeout >= ?
             )
         |);
-        $insert_sth->bind_param(':id', $session_id);
-        $insert_sth->bind_param(':data', $self->{'_serializer'}->($data));
-        $insert_sth->bind_param(':timeout', ($now - $self->{'_timeout'}));
-        $insert_sth->execute();
+        $insert_sth->execute($session_id, $application, $timeout, $serialized, $session_id, $application, $now);
         $insert_sth->finish();
 
         my $update_sth = $dbh->prepare(qq|
             UPDATE ${table}
-            SET data = :data
-            WHERE id = :id
-              AND timeout >= :timeout
+            SET timeout = ?, data = ?
+            WHERE id = ?
+              AND application = ?
+              AND timeout >= ?
         |);
-        $update_sth->bind_param(':id', $session_id);
-        $update_sth->bind_param(':data', $self->{'_serializer'}->($data));
-        $update_sth->bind_param(':timeout', ($now - $self->{'_timeout'}));
-        $update_sth->execute();
+        $update_sth->execute($timeout, $serialized, $session_id, $application, $now);
         $update_sth->finish();
 
         # 10% of the time we will also purge old sessions
@@ -127,16 +128,17 @@ sub store {
                 my $delete_sth = $dbh->prepare(qq|
                     DELETE
                     FROM ${table}
-                    WHERE timeout < ?
+                    WHERE application = ?
+                      AND timeout < ?
                 |);
-                $delete_sth->execute($now - $self->{'_timeout'});
+                $delete_sth->execute($application, $now);
                 $delete_sth->finish();
             }
         }
 
         $dbh->commit();
     } catch {
-        try { $dbh->rollback() } catch {};
+        try { $dbh->rollback(); } catch {};
 
         my $error = (defined($_) ? $_ : "unknown");
         carp "error fetching from session: ${error}";
@@ -151,17 +153,20 @@ sub remove {
 
     try {
         my $table = $self->{'_table'};
+        my $application = $self->{'_application'};
+
         my $sth = $dbh->prepare(qq|
             DELETE
             FROM ${table}
             WHERE id = ?
+              AND application = ?
         |);
-        $sth->execute($session_id);
+        $sth->execute($session_id, $application);
         $sth->finish();
 
         $dbh->commit();
     } catch {
-        try { $dbh->rollback() } catch {};
+        try { $dbh->rollback(); } catch {};
 
         my $error = (defined($_) ? $_ : "unknown");
         carp "error fetching from session: ${error}";

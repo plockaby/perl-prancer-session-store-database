@@ -1,5 +1,5 @@
 ---
-abstract: A lightweight PSGI framework - Store sessions in a database
+abstract: A lightweight PSGI framework - Sessions in a Database
 author:
   - 'Paul Lockaby <plockaby AT cpan DOT org>'
 build_requires:
@@ -12,7 +12,7 @@ license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
-name: Prancer-Session-Store-Database
+name: prancer-session-store-database
 no_index:
   directory:
     - t
@@ -21,6 +21,7 @@ requires:
   Prancer: 1.00
   Plack: 0.9968
   Plack::Middleware::Session: 0.23
+  DBI: 0
   Try::Tiny: 0
   perl: 5.010
 version: 1.00

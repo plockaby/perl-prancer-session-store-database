@@ -21,13 +21,17 @@ database in transactions to ensure consistency.
 
 This configuration expects a database table that looks like this:
 
-    CREATE TABLE sessions (
-        id CHAR(72) PRIMARY KEY,
-        data TEXT,
-        timeout integer DEFAULT date_part('epoch'::text, now()) NOT NULL
+    CREATE TABLE session (
+        id CHAR(72) NOT NULL,
+        application VARCHAR DEFALUT '' NOT NULL,
+        timeout integer DEFAULT date_part('epoch'::text, now()) NOT NULL,
+        data TEXT
     );
 
-Additional columns may be added as desired but they will not be used by the
+    CREATE UNIQUE INDEX session_uq ON sessions (id, application);
+    CREATE INDEX session_timeout_ix ON sessions (timeout);
+
+Additional columns may be added as desired but they will not be used by this
 session handler.
 
 To use this session handler, add this to your configuration file:
@@ -46,6 +50,7 @@ To use this session handler, add this to your configuration file:
                 connection_check_threshold: 10
                 expiration_timeout: 3600
                 autopurge: 0
+                application: foobar
 
 =head1 OPTIONS
 
@@ -108,6 +113,12 @@ will delete from the database any session that has timed out. If set to 0 then
 sessions will never be removed from the database. Note that this doesn't
 control whether sessions time out, only whether they get removed from the
 database.
+
+=item application
+
+If multiple applications will be using the same session table then this option
+may be used to distinguish between them. This key will be included in the
+application column of the database table.
 
 =back
 
