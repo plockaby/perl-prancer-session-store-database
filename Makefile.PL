@@ -6,7 +6,7 @@ use warnings FATAL => 'all';
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    'NAME'          => 'prancer-session-store-database',
+    'NAME'          => 'Prancer::Session::Store::Database',
     'AUTHOR'        => 'Paul Lockaby <plockaby AT cpan DOT org>',
     'VERSION_FROM'  => 'lib/Prancer/Session/Store/Database.pm',
     'PREREQ_PM'     => {
