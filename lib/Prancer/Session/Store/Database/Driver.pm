@@ -4,7 +4,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use version;
-our $VERSION = "1.00";
+our $VERSION = '1.00';
 
 use Plack::Session::Store;
 use parent qw(Plack::Session::Store);
@@ -57,7 +57,7 @@ sub handle {
     # (if running with use threads) to make sure no two processes/threads share
     # a handle. implementation based on DBIx::Connector by David E. Wheeler
     my $pid_tid = $$;
-    $pid_tid .= '_' . threads->tid() if $INC{'threads.pm'};
+    $pid_tid .= "_" . threads->tid() if $INC{'threads.pm'};
 
     # see if we have a matching handle
     my $handle = $self->{'_handles'}->{$pid_tid} || undef;
@@ -124,7 +124,7 @@ sub _check_connection {
             # instead we got the default DBI ping implementation. implement
             # our own basic check, by performing a real simple query.
             return try {
-                return $dbh->do('SELECT 1');
+                return $dbh->do("SELECT 1");
             } catch {
                 return 0;
             };

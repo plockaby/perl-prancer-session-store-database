@@ -4,7 +4,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use version;
-our $VERSION = "1.00";
+our $VERSION = '1.00';
 
 use Prancer::Session::Store::Database::Driver;
 use parent qw(Prancer::Session::Store::Database::Driver);
