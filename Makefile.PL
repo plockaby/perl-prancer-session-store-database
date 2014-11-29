@@ -10,7 +10,7 @@ WriteMakefile(
     'AUTHOR'        => 'Paul Lockaby <plockaby AT cpan DOT org>',
     'VERSION_FROM'  => 'lib/Prancer/Session/Store/Database.pm',
     'PREREQ_PM'     => {
-        'Prancer'                    => '1.00',
+        'Prancer'                    => '0.990003',
         'Plack'                      => '0.9968',  # same version required by Web::Simple
         'Plack::Middleware::Session' => '0.23',  # require secrets
         'DBI'                        => '0',
