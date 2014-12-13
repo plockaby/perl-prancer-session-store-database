@@ -4,7 +4,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use version;
-our $VERSION = '0.990002';
+our $VERSION = '1.00';
 
 1;
 
@@ -14,9 +14,9 @@ Prancer::Session::Store::Database
 
 =head1 SYNOPSIS
 
-This module implements a session handler by storing sessions in a database. It
+This module implements a session handler that stores sessions in a database. It
 creates its own database connection, separate from any existing database
-connection, avoid any issues with transactions. It wraps all changes to the
+connection, to avoid any issues with transactions. It wraps all changes to the
 database in transactions to ensure consistency.
 
 This configuration expects a database table that looks like this:
@@ -50,41 +50,46 @@ To use this session handler, add this to your configuration file:
                 connection_check_threshold: 10
                 expiration_timeout: 3600
                 autopurge: 0
+                autopurge_probability: 0.1
                 application: foobar
 
 =head1 OPTIONS
 
-=over 4
+=over
 
 =item table
 
 The name of the table in your database to use to store sessions. This name may
-include a schema name. Otherwise the default schema of the user will be used.
-If this option is not provided the default will be C<sessions>.
+include a schema name, like C<public.sessions>. Otherwise the default schema of
+the database user will be used. If this option is not provided then the default
+table name is C<sessions>.
 
 =item database
 
-B<REQUIRED> The name of the database to connect to.
+B<REQUIRED> The name of the database to connect to. If using SQLite, this
+should be the path to the database file.
 
 =item username
 
 The username to use when connecting. If this option is not set the default is
-the user running the application server.
+the user running the application server. If using SQLite then this will be
+ignored.
 
 =item password
 
-The password to use when connectin. If this option is not set the default is to
-connect with no password.
+The password to use when connecting. If this option is not set the default is
+to connect with no password. If using SQLite then this will be ignored.
 
 =item hostname
 
 The host name of the database server. If this option is not set the default is
-to connect to localhost.
+to connect to localhost. If using SQLite then this will be ignored.
 
 =item port
 
 The port number on which the database server is listening. If this option is
-not set the default is to connect on the database's default port.
+not set the default is to connect on the database's default port. If using
+SQLite then this will be ignored.
 
 =item charset
 
@@ -95,15 +100,17 @@ available.
 =item connection_check_threshold
 
 This sets the number of seconds that must elapse between calls to get a
-database handle before performing a check to ensure that a database connection
-still exists and will reconnect if one does not. This handles cases where the
+database handle before performing a check to ensure that a live database
+connection still exists. If the check for a live database connection fails then
+the session handler will attempt to reconnect. This handles cases where the
 database handle hasn't been used in a while and the underlying connection has
 gone away. If this is not set it will default to 30 seconds.
 
 =item timeout
 
-This the number of seconds a session should last in the database before it will
-be automatically purged. The default is to purge sessions after 1800 seconds.
+Tthis is the number of seconds a session should last in the database before it
+will be automatically purged. The default is to purge sessions after 1800
+seconds (30 minutes).
 
 =item autopurge
 
@@ -114,11 +121,35 @@ sessions will never be removed from the database. Note that this doesn't
 control whether sessions time out, only whether they get removed from the
 database.
 
+=item autopurge_probability
+
+This is the probability that autopurge will run on any given request. By
+default, this value is 0.1, or 10%, meaning that 1 in every 10 requests will
+attempt to purge expired sessions. This can be set to "1" to purge on every
+session action or to something extremely small like 0.001 to purge very, very
+infrequently. Or you can export purging duties to another program entirely.
+
 =item application
 
 If multiple applications will be using the same session table then this option
-may be used to distinguish between them. This key will be included in the
-application column of the database table.
+may be used to distinguish between them. This key will be used in the
+C<application> column of the sessions table.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2014 Paul Lockaby. All rights reserved.
+
+This library is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+=over
+
+=item L<Prancer>
+=item L<Prancer::Session>
 
 =back
 

@@ -17,6 +17,7 @@ our @CARP_NOT = qw(Prancer Try::Tiny);
 
 sub new {
     my $class = shift;
+    my $self = bless($class->SUPER::new(@_), $class);
 
     try {
         require DBD::mysql;
@@ -25,7 +26,6 @@ sub new {
         croak "could not initialize session handler: could not load DBD::mysql: ${error}";
     };
 
-    my $self = bless($class->SUPER::new(@_), $class);
     my $database  = $self->{'_database'};
     my $username  = $self->{'_username'};
     my $password  = $self->{'_password'};

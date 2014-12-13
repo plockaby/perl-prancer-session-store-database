@@ -1,4 +1,4 @@
-package Prancer::Session::Store::Database::Driver::SQLite;
+package Prancer::Session::Store::Database::Driver::Mock;
 
 use strict;
 use warnings FATAL => 'all';
@@ -20,26 +20,19 @@ sub new {
     my $self = bless($class->SUPER::new(@_), $class);
 
     try {
-        require DBD::SQLite;
+        require DBD::Mock;
     } catch {
         my $error = (defined($_) ? $_ : "unknown");
-        croak "could not initialize session handler: could not load DBD::SQLite: ${error}";
+        croak "could not initialize session handler: could not load DBD::Mock: ${error}";
     };
 
-    my $database  = $self->{'_database'};
-    my $charset   = $self->{'_charset'};
-    my $table     = $self->{'_table'};
-
-    my $dsn = "dbi:SQLite:dbname=${database}";
+    my $dsn = "dbi:Mock:";
 
     my $params = {
         'AutoCommit' => 0,
         'RaiseError' => 1,
         'PrintError' => 0,
     };
-    if ($charset && $charset =~ /^utf8$/xi) {
-        $params->{'sqlite_unicode'} = 1;
-    }
 
     $self->{'_dsn'} = [ $dsn, undef, undef, $params ];
     return $self;

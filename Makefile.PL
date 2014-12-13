@@ -10,12 +10,12 @@ WriteMakefile(
     'AUTHOR'        => 'Paul Lockaby <plockaby AT cpan DOT org>',
     'VERSION_FROM'  => 'lib/Prancer/Session/Store/Database.pm',
     'PREREQ_PM'     => {
-        'Prancer'                    => '0.990003',
+        'Prancer'                    => '1.00',
         'Plack'                      => '0.9968',  # same version required by Web::Simple
         'Plack::Middleware::Session' => '0.23',  # require secrets
         'DBI'                        => '0',
+        'DBD::Mock'                  => '0',
         'Try::Tiny'                  => '0',
-        'perl'                       => '5.010',  # because "//" is used
     },
     'INSTALLDIRS'   => (($] < 5.011) ? 'perl' : 'site'),
 
@@ -24,4 +24,3 @@ WriteMakefile(
     ((ExtUtils::MakeMaker->VERSION() gt '6.30') ?
         ('LICENSE'  => 'perl')         : ()),
 );
-

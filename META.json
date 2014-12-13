@@ -36,11 +36,11 @@
             "Plack" : "0.9968",
             "Plack::Middleware::Session" : "0.23",
             "DBI" : "0",
-            "Try::Tiny" : "0",
-            "perl" : "5.010"
+            "DBD::Mock" : "0",
+            "Try::Tiny" : "0"
          }
       }
    },
-   "release_status" : "experimental",
+   "release_status" : "stable",
    "version" : "1.00"
 }

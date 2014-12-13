@@ -28,21 +28,21 @@ sub new {
 
     # initialize the serializer that will be used
     my $self = bless($class->SUPER::new(%{$config || {}}), $class);
-    $self->{'_serializer'}      = sub { encode_base64(nfreeze(shift)) };
-    $self->{'_deserializer'}    = sub { thaw(decode_base64(shift)) };
+    $self->{'_serializer'} = sub { encode_base64(nfreeze(shift)) };
+    $self->{'_deserializer'} = sub { thaw(decode_base64(shift)) };
 
-    $self->{'_database'}        = $config->{'database'};
-    $self->{'_username'}        = $config->{'username'};
-    $self->{'_password'}        = $config->{'password'};
-    $self->{'_hostname'}        = $config->{'hostname'};
-    $self->{'_port'}            = $config->{'port'};
-    $self->{'_autocommit'}      = $config->{'autocommit'};
-    $self->{'_charset'}         = $config->{'charset'};
-    $self->{'_check_threshold'} = $config->{'connection_check_threshold'} // 30;
-    $self->{'_table'}           = $config->{'table'} || "sessions";
-    $self->{'_timeout'}         = $config->{'expiration_timeout'} // 1800;
-    $self->{'_autopurge'}       = $config->{'autopurge'} // 1;
-    $self->{'_application'}     = $config->{'application'};
+    $self->{'_database'}              = $config->{'database'};
+    $self->{'_username'}              = $config->{'username'};
+    $self->{'_password'}              = $config->{'password'};
+    $self->{'_hostname'}              = $config->{'hostname'};
+    $self->{'_port'}                  = $config->{'port'};
+    $self->{'_charset'}               = $config->{'charset'};
+    $self->{'_check_threshold'}       = $config->{'connection_check_threshold'} // 30;
+    $self->{'_table'}                 = $config->{'table'} || "sessions";
+    $self->{'_timeout'}               = $config->{'expiration_timeout'} // 1800;
+    $self->{'_autopurge'}             = $config->{'autopurge'} // 1;
+    $self->{'_autopurge_probability'} = $config->{'autopurge_probability'} || 0.1;
+    $self->{'_application'}           = $config->{'application'};
 
     # store a pool of database connection handles
     $self->{'_handles'} = {};
@@ -103,7 +103,7 @@ sub _get_connection {
         $dbh = DBI->connect(@{$self->{'_dsn'}}) || die "${\$DBI::errstr}\n";
     } catch {
         my $error = (defined($_) ? $_ : "unknown");
-        croak "could not initialize database connection '${\$self->{'_connection'}}': ${error}";
+        croak "could not initialize database connection: ${error}";
     };
 
     return $dbh;
@@ -158,6 +158,9 @@ sub fetch {
         # deserialize the data if there is any
         $result = (defined($data) ? $self->{'_deserializer'}->($data) : undef);
 
+        # maybe we'll purge old sessions sometimes
+        $self->_purge();
+
         $dbh->commit();
     } catch {
         try { $dbh->rollback(); } catch {};
@@ -204,20 +207,8 @@ sub store {
         $update_sth->execute($timeout, $serialized, $session_id, $application, $now);
         $update_sth->finish();
 
-        # 10% of the time we will also purge old sessions
-        if ($self->{'_autopurge'}) {
-            my $chance = rand();
-            if ($chance <= 0.1) {
-                my $delete_sth = $dbh->prepare(qq|
-                    DELETE
-                    FROM ${table}
-                    WHERE application = ?
-                      AND timeout < ?
-                |);
-                $delete_sth->execute($application, $now);
-                $delete_sth->finish();
-            }
-        }
+        # maybe we'll purge old sessions sometimes
+        $self->_purge();
 
         $dbh->commit();
     } catch {
@@ -247,6 +238,9 @@ sub remove {
         $sth->execute($session_id, $application);
         $sth->finish();
 
+        # maybe we'll purge old sessions sometimes
+        $self->_purge();
+
         $dbh->commit();
     } catch {
         try { $dbh->rollback(); } catch {};
@@ -254,6 +248,32 @@ sub remove {
         my $error = (defined($_) ? $_ : "unknown");
         carp "error fetching from session: ${error}";
     };
+
+    return;
+}
+
+sub _purge {
+    my $self = shift;
+
+    # 10% of the time we will also purge old sessions
+    if ($self->{'_autopurge'}) {
+        my $chance = rand();
+        if ($chance <= $self->{'_autopurge_probability'}) {
+            my $now = time();
+            my $dbh = $self->handle();
+            my $table = $self->{'_table'};
+            my $application = $self->{'_application'};
+
+            my $delete_sth = $dbh->prepare(qq|
+                DELETE
+                FROM ${table}
+                WHERE application = ?
+                  AND timeout < ?
+            |);
+            $delete_sth->execute($application, $now);
+            $delete_sth->finish();
+        }
+    }
 
     return;
 }
