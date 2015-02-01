@@ -6,3 +6,6 @@ severity = harsh
 #     Doesn't let me do qq|| blocks.
 exclude = RequireArgUnpacking ProhibitImplicitNewlines
 
+[NamingConventions::ProhibitAmbiguousNames]
+forbid = close last
+

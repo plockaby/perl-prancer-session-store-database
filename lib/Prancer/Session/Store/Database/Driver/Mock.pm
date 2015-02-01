@@ -4,7 +4,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use version;
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use Prancer::Session::Store::Database::Driver;
 use parent qw(Prancer::Session::Store::Database::Driver);
@@ -33,6 +33,9 @@ sub new {
         'RaiseError' => 1,
         'PrintError' => 0,
     };
+
+    # merge in any additional dsn_params
+    $params = $self->_merge($params, $self->{'_dsn_extra'});
 
     $self->{'_dsn'} = [ $dsn, undef, undef, $params ];
     return $self;

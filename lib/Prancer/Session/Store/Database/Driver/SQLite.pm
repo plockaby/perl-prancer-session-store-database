@@ -4,7 +4,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use version;
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use Prancer::Session::Store::Database::Driver;
 use parent qw(Prancer::Session::Store::Database::Driver);
@@ -40,6 +40,9 @@ sub new {
     if ($charset && $charset =~ /^utf8$/xi) {
         $params->{'sqlite_unicode'} = 1;
     }
+
+    # merge in any additional dsn_params
+    $params = $self->_merge($params, $self->{'_dsn_extra'});
 
     $self->{'_dsn'} = [ $dsn, undef, undef, $params ];
     return $self;

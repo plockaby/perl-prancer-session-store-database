@@ -4,7 +4,7 @@ use strict;
 use warnings FATAL => 'all';
 
 use version;
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use Plack::Session::Store;
 use parent qw(Plack::Session::Store);
@@ -38,6 +38,8 @@ sub new {
     $self->{'_port'}                  = $config->{'port'};
     $self->{'_charset'}               = $config->{'charset'};
     $self->{'_check_threshold'}       = $config->{'connection_check_threshold'} // 30;
+    $self->{'_dsn_extra'}             = $config->{'dsn_extra'} || {};
+    $self->{'_on_connect'}            = $config->{'on_connect'} || [];
     $self->{'_table'}                 = $config->{'table'} || "sessions";
     $self->{'_timeout'}               = $config->{'expiration_timeout'} // 1800;
     $self->{'_autopurge'}             = $config->{'autopurge'} // 1;
@@ -101,6 +103,9 @@ sub _get_connection {
 
     try {
         $dbh = DBI->connect(@{$self->{'_dsn'}}) || die "${\$DBI::errstr}\n";
+
+        # run any on_connect sql
+        $dbh->do($_) for (@{$self->{'_on_connect'}});
     } catch {
         my $error = (defined($_) ? $_ : "unknown");
         croak "could not initialize database connection: ${error}";
@@ -276,6 +281,30 @@ sub _purge {
     }
 
     return;
+}
+
+# stolen from Hash::Merge::Simple
+## no critic (ProhibitUnusedPrivateSubroutines)
+sub _merge {
+    my ($self, $left, @right) = @_;
+
+    return $left unless @right;
+    return $self->_merge($left, $self->_merge(@right)) if @right > 1;
+
+    my ($right) = @right;
+    my %merged = %{$left};
+
+    for my $key (keys %{$right}) {
+        my ($hr, $hl) = map { ref($_->{$key}) eq "HASH" } $right, $left;
+
+        if ($hr and $hl) {
+            $merged{$key} = $self->_merge($left->{$key}, $right->{$key});
+        } else {
+            $merged{$key} = $right->{$key};
+        }
+    }
+
+    return \%merged;
 }
 
 1;

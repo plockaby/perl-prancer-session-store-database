@@ -38,6 +38,11 @@ To use this session handler, add this to your configuration file:
                 port: 5432
                 charset: utf8
                 connection_check_threshold: 10
+                dsn_extra:
+                    RaiseError: 0
+                    PrintError: 1
+                on_connect:
+                    - SET search_path=public
                 expiration_timeout: 3600
                 autopurge: 0
                 autopurge_probability: 0.1
@@ -94,6 +99,20 @@ To use this session handler, add this to your configuration file:
     database handle hasn't been used in a while and the underlying connection has
     gone away. If this is not set it will default to 30 seconds.
 
+- dsn\_extra
+
+    If you have any further connection parameters that need to be appended to the
+    dsn then you can put them in the configuration as a hash. This hash will be
+    merged into the default parameters and overwrite any that are duplicated. The
+    dsn parameters set by default are `AutoCommit` to 0, `RaiseError` to 1, and
+    `PrintError` to 0.
+
+- on\_connect
+
+    This can be an array of commands execute on a successful connection. These will
+    be executed on every connection so if the connection goes away but is re-
+    established then these commands will be run again.
+
 - timeout
 
     Tthis is the number of seconds a session should last in the database before it
@@ -134,4 +153,3 @@ the same terms as Perl itself.
 
 - [Prancer](https://metacpan.org/pod/Prancer)
 - [Prancer::Session](https://metacpan.org/pod/Prancer::Session)
-
