@@ -4,4 +4,4 @@
 CLONEDIR=push/lib
 
 # must be included after the above declarations
-include $(PUSHDIR)/perl.push
+include $(PUSHDIR)/actions/perl.push
