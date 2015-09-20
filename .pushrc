@@ -1,7 +1,4 @@
-#!/usr/bin/make -f
-
-# the clone source tree
-CLONEDIR=push/lib
-
-# must be included after the above declarations
-include $(PUSHDIR)/actions/perl.push
+#!/usr/bin/env python2.7
+from fabric.api import env
+from pushlib.perl import *
+env.clone_path = "push/lib"
