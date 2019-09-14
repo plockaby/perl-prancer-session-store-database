@@ -1,3 +1,4 @@
 *.t linguist-language=Perl
 *.pl linguist-language=Perl
 *.pm linguist-language=Perl
+t/configs/* linguist-detectable=false
