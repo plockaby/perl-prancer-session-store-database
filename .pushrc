@@ -1,4 +1,0 @@
-#!/usr/bin/env python2.7
-from fabric.api import env
-from pushlib.perl import *
-env.clone_path = "push/common"
